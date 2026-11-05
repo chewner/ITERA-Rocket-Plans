@@ -9,7 +9,9 @@ const apiBase='https://api.github.com/repos/'+repo;
 const token=process.env.GITHUB_TOKEN;
 if(!token)throw new Error('Scoped workflow token required');
 const headers={Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
-const fixes=JSON.parse(await fs.readFile('fixes.json','utf8'));
+const shardCount=Number(process.env.SHARD_COUNT||1),shardIndex=Number(process.env.SHARD_INDEX||0);
+if(!Number.isInteger(shardCount)||shardCount<1||!Number.isInteger(shardIndex)||shardIndex<0||shardIndex>=shardCount)throw new Error('Invalid shard');
+const fixes=JSON.parse(await fs.readFile('fixes.json','utf8')).filter((_,i)=>i%shardCount===shardIndex);
 const hash=async name=>{const h=createHash('sha256');for await(const chunk of createReadStream(name))h.update(chunk);return h.digest('hex');};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(route,options={}){
